@@ -10,12 +10,13 @@
 #define BUTTON_JUMP_PIN 2
 
 #define PLAYER_X 10
-#define PLAYER_Y 50
-#define PLAYER_SIZE 5
+#define PLAYER_Y 40
+#define PLAYER_SIZE 15
+#define PLAYER_X_SIZE 5
 #define FLOOR_HEIGHT 10
 
 #define OBSTACLE_WIDTH 5
-#define OBSTACLE_HEIGHT 5
+#define OBSTACLE_HEIGHT 6
 #define OBSTACLE_SPEED 1
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -37,11 +38,42 @@ void setup() {
   Serial.begin(9600);
 }
 
+void drawPlayer(int x, int y) {
+  // Draw the head
+  display.drawPixel(x, y, WHITE);
+  display.drawPixel(x, y + 1, WHITE);
+  display.drawPixel(x - 1, y + 1, WHITE);
+  display.drawPixel(x + 1, y + 1, WHITE);
+  display.drawPixel(x - 1, y + 2, WHITE);
+  display.drawPixel(x + 1, y + 2, WHITE);
+  display.drawPixel(x - 1, y + 3, WHITE);
+  display.drawPixel(x + 1, y + 3, WHITE);
+  
+  // Draw the body
+  display.drawLine(x, y + 4, x, y + 9, WHITE);
+  
+  // Draw the left arm
+  display.drawLine(x, y + 5, x - 4, y + 6, WHITE);
+  display.drawLine(x - 4, y + 6, x - 5, y + 4, WHITE);
+  
+  // Draw the right arm
+  display.drawLine(x, y + 5, x + 4, y + 6, WHITE);
+  display.drawLine(x + 4, y + 6, x + 5, y + 4, WHITE);
+  
+  // Draw the left leg
+  display.drawLine(x, y + 9, x - 3, y + 14, WHITE);
+  display.drawLine(x - 3, y + 14, x - 1, y + 14, WHITE);
+  
+  // Draw the right leg
+  display.drawLine(x, y + 9, x + 3, y + 14, WHITE);
+  display.drawLine(x + 3, y + 14, x + 1, y + 14, WHITE);
+}
+
 void loop() {
   display.clearDisplay();
 
   // Draw the player
-  display.fillRect(PLAYER_X, playerY, PLAYER_SIZE, PLAYER_SIZE, WHITE);
+  drawPlayer(PLAYER_X, playerY);
 
   // Draw the obstacle
   display.fillRect(obstacleX, obstacleY, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, WHITE);
@@ -58,7 +90,9 @@ void loop() {
   }
 
   // Check for collision with the obstacle
-  if (PLAYER_X + PLAYER_SIZE > obstacleX && PLAYER_X < obstacleX + OBSTACLE_WIDTH && playerY + PLAYER_SIZE > obstacleY) {
+  if (PLAYER_X + PLAYER_X_SIZE > obstacleX &&
+      PLAYER_X < obstacleX + OBSTACLE_WIDTH &&
+      playerY + PLAYER_SIZE > obstacleY) {
     Serial.println("Game Over");
     while (1);
   }
@@ -68,12 +102,15 @@ void loop() {
     jumping = true;
   }
   if (jumping) {
-    playerY -= 2;
-    if (playerY <= PLAYER_Y - 20) {
+    playerY -= 3;
+    if (playerY <= PLAYER_Y - 30) {
       jumping = false;
     }
   } else if (playerY < PLAYER_Y) {
     playerY += 2;
+  }
+  if (playerY > PLAYER_Y) {
+    playerY = PLAYER_Y;
   }
 
   delay(20);
