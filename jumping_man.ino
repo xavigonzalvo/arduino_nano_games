@@ -8,6 +8,7 @@
 #define BLOCK_SIZE 2
 
 #define BUTTON_JUMP_PIN 2
+#define BUTTON_RESET_PIN 3
 
 #define PLAYER_X 10
 #define PLAYER_Y 40
@@ -27,6 +28,8 @@ bool jumping = false;
 int obstacleX = SCREEN_WIDTH;
 int obstacleY = PLAYER_Y + PLAYER_SIZE - OBSTACLE_HEIGHT;
 
+bool gameOver;
+
 void setup() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
@@ -34,6 +37,7 @@ void setup() {
   delay(2000);
 
   pinMode(BUTTON_JUMP_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_RESET_PIN, INPUT_PULLUP);
   
   Serial.begin(9600);
 }
@@ -69,18 +73,35 @@ void drawPlayer(int x, int y) {
   display.drawLine(x + 3, y + 14, x + 1, y + 14, WHITE);
 }
 
+void resetGame() {
+  playerY = PLAYER_Y;
+  jumping = false;
+  gameOver = false;
+
+  obstacleX = SCREEN_WIDTH;
+  obstacleY = PLAYER_Y + PLAYER_SIZE - OBSTACLE_HEIGHT;
+}
+
 void loop() {
   display.clearDisplay();
 
-  // Draw the player
-  drawPlayer(PLAYER_X, playerY);
+  if (gameOver) {
+    // Draw "Game Over!" message
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(30, 30);
+    display.println("Game Over!");
+  }  else {
+    // Draw the player
+    drawPlayer(PLAYER_X, playerY);
 
-  // Draw the obstacle
-  display.fillRect(obstacleX, obstacleY, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, WHITE);
+    // Draw the obstacle
+    display.fillRect(obstacleX, obstacleY, OBSTACLE_WIDTH, OBSTACLE_HEIGHT, WHITE);
 
-  // Draw the floor
-  display.drawLine(0, SCREEN_HEIGHT - FLOOR_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - FLOOR_HEIGHT, WHITE);
-  
+    // Draw the floor
+    display.drawLine(0, SCREEN_HEIGHT - FLOOR_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - FLOOR_HEIGHT, WHITE);
+  }
+
   display.display();
 
   // Move the obstacle
@@ -93,24 +114,30 @@ void loop() {
   if (PLAYER_X + PLAYER_X_SIZE > obstacleX &&
       PLAYER_X < obstacleX + OBSTACLE_WIDTH &&
       playerY + PLAYER_SIZE > obstacleY) {
-    Serial.println("Game Over");
-    while (1);
+    gameOver = true;
   }
 
-  // Handle jumping
-  if (digitalRead(BUTTON_JUMP_PIN) == LOW && !jumping) {
-    jumping = true;
-  }
-  if (jumping) {
-    playerY -= 3;
-    if (playerY <= PLAYER_Y - 30) {
-      jumping = false;
+  if (!gameOver) {
+    // Handle jumping
+    if (digitalRead(BUTTON_JUMP_PIN) == LOW && !jumping) {
+      jumping = true;
     }
-  } else if (playerY < PLAYER_Y) {
-    playerY += 2;
+    if (jumping) {
+      playerY -= 3;
+      if (playerY <= PLAYER_Y - 30) {
+        jumping = false;
+      }
+    } else if (playerY < PLAYER_Y) {
+      playerY += 2;
+    }
+    if (playerY > PLAYER_Y) {
+      playerY = PLAYER_Y;
+    }
   }
-  if (playerY > PLAYER_Y) {
-    playerY = PLAYER_Y;
+
+  // Handle game reset
+  if (digitalRead(BUTTON_RESET_PIN) == LOW) {
+    resetGame();
   }
 
   delay(20);
