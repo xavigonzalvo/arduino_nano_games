@@ -29,6 +29,7 @@ int obstacleX = SCREEN_WIDTH;
 int obstacleY = PLAYER_Y + PLAYER_SIZE - OBSTACLE_HEIGHT;
 
 bool gameOver;
+int score;
 
 void setup() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -39,7 +40,7 @@ void setup() {
   pinMode(BUTTON_JUMP_PIN, INPUT_PULLUP);
   pinMode(BUTTON_RESET_PIN, INPUT_PULLUP);
   
-  Serial.begin(9600);
+  resetGame();
 }
 
 void drawPlayer(int x, int y) {
@@ -77,6 +78,7 @@ void resetGame() {
   playerY = PLAYER_Y;
   jumping = false;
   gameOver = false;
+  score = 0;
 
   obstacleX = SCREEN_WIDTH;
   obstacleY = PLAYER_Y + PLAYER_SIZE - OBSTACLE_HEIGHT;
@@ -100,24 +102,31 @@ void loop() {
 
     // Draw the floor
     display.drawLine(0, SCREEN_HEIGHT - FLOOR_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - FLOOR_HEIGHT, WHITE);
+
+    // Check for collision with the obstacle
+    if (PLAYER_X + PLAYER_X_SIZE > obstacleX &&
+        PLAYER_X < obstacleX + OBSTACLE_WIDTH &&
+        playerY + PLAYER_SIZE > obstacleY) {
+      gameOver = true;
+    }
+
+    // Draw the score
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(SCREEN_WIDTH - 20, 0);
+    display.println(score);
   }
 
   display.display();
 
-  // Move the obstacle
-  obstacleX -= OBSTACLE_SPEED;
-  if (obstacleX < -OBSTACLE_WIDTH) {
-    obstacleX = SCREEN_WIDTH;
-  }
-
-  // Check for collision with the obstacle
-  if (PLAYER_X + PLAYER_X_SIZE > obstacleX &&
-      PLAYER_X < obstacleX + OBSTACLE_WIDTH &&
-      playerY + PLAYER_SIZE > obstacleY) {
-    gameOver = true;
-  }
-
   if (!gameOver) {
+    // Move the obstacle
+    obstacleX -= OBSTACLE_SPEED;
+    if (obstacleX < -OBSTACLE_WIDTH) {
+      obstacleX = SCREEN_WIDTH;
+      score++;
+    }
+  
     // Handle jumping
     if (digitalRead(BUTTON_JUMP_PIN) == LOW && !jumping) {
       jumping = true;
