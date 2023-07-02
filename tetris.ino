@@ -2,13 +2,13 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
+#define SCREEN_WIDTH 48
+#define SCREEN_HEIGHT 48
 #define OLED_RESET -1
-#define BLOCK_SIZE 2
+#define BLOCK_SIZE 4
 
-#define BUTTON_LEFT_PIN 2
-#define BUTTON_RIGHT_PIN 3
+#define BUTTON_LEFT_PIN 3
+#define BUTTON_RIGHT_PIN 2
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -45,6 +45,9 @@ void loop() {
     }
   }
 
+  // Draw a square around the board
+  display.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
+
   // Draw the falling block
   for (int i = 0; i < BLOCK_SIZE; i++) {
     for (int j = 0; j < BLOCK_SIZE; j++) {
@@ -54,8 +57,7 @@ void loop() {
   display.display();
 
   // Check for collisions with the game board or the bottom of the screen
-  if (posY >= SCREEN_HEIGHT - BLOCK_SIZE ||
-      gameBoard[posX / BLOCK_SIZE][(posY + BLOCK_SIZE) / BLOCK_SIZE] == 1) {
+  if (posY >= SCREEN_HEIGHT - BLOCK_SIZE || gameBoard[posX / BLOCK_SIZE][(posY + BLOCK_SIZE) / BLOCK_SIZE] == 1) {
     gameBoard[posX / BLOCK_SIZE][posY / BLOCK_SIZE] = 1;
     posX = SCREEN_WIDTH / 2;
     posY = 0;
@@ -72,5 +74,27 @@ void loop() {
     posX++;
     Serial.println("Right button pressed");
   }
+
+  // Check for and clear complete lines
+  for (int j = 0; j < SCREEN_HEIGHT / BLOCK_SIZE; j++) {
+    bool lineComplete = true;
+    for (int i = 0; i < SCREEN_WIDTH / BLOCK_SIZE; i++) {
+      if (gameBoard[i][j] == 0) {
+        lineComplete = false;
+        break;
+      }
+    }
+    if (lineComplete) {
+      for (int k = j; k > 0; k--) {
+        for (int i = 0; i < SCREEN_WIDTH / BLOCK_SIZE; i++) {
+          gameBoard[i][k] = gameBoard[i][k - 1];
+        }
+      }
+      for (int i = 0; i < SCREEN_WIDTH / BLOCK_SIZE; i++) {
+        gameBoard[i][0] = 0;
+      }
+    }
+  }
+
   delay(100);
 }
